@@ -1,4 +1,4 @@
-seurl = "/"
+baseurl = "/"
 languageCode = "en-us"
 theme = "terminal"
 paginate = 5
