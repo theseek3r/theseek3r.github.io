@@ -6,7 +6,7 @@ author = "blue"
 showFullContent = false
 +++
 
-# Memory consistency model
+## Memory consistency model
 
 Ban đầu X = Y = 0
 ```
@@ -24,7 +24,7 @@ Một điều bất ngờ là ở hầu hết cái kiến trúc CPU hiện đạ
 
 Việc hiểu về trật tự truy xuất bộ nhớ là vô cùng quan trọng đối với người lập trình để có thể viết ra những chương trình đem lại kết quả như mong muốn. Vì thế, các nhà sản xuất thường xây dựng **memory consistency model** để quy định các thay đổi trong trật tự truy xuất bộ nhớ (memory reordering) được cho phép và những thay đổi không được cho phép.
 
-# Sequential consistency (SC)
+## Sequential consistency (SC)
 Ở memory consistency model này, trật tự truy xuất bộ nhớ được đảm bảo giống với trật tự chương trình của từng CPU.
 ```
 (LOAD(x)  <p  LOAD(y))  -> (LOAD(x)  <m  LOAD(y))
@@ -49,7 +49,7 @@ R1 = 0            -> (R1 = Y <m Y = 1)          (2)
 Tương tự nếu `R2 = 0`
 Từ đó, chúng ta có thể thấy trong SC, kết quả `R1= 0 and R2 = 0` là không thể
 
-# Total store order (TSO)
+## Total store order (TSO)
 SC mang đến một mô hình dễ hiểu cho người lập trình tuy nhiên hiệu năng không tốt. Một tác vụ truy xuất bộ nhớ thực thi lâu hơn mong đợi có thể làm gián đoạn việc thực thi trên CPU. Trong 2 tác vụ truy xuất bộ nhớ, tác vụ STORE thường có thời gian thực thi lâu hơn.
 
 Để giải thích cho điều này giả sử mỗi CPU sẽ có 1 bộ cache riêng và sử dụng giao thức MESI để quản lý cache. Trong giao thức này, CPU có thể đọc từ cacheline khi cacheline trong trạng thái Modified (M), Exclusive (E), Shared (S), tuy nhiên chỉ có thể ghi vào cacheline khi cacheline trong trạng thái Modified (M), Exclusive (E). Khi thực thi tác vụ LOAD(x) nếu x không trong cache của CPU A (cache miss), 1 lời nhắn sẽ được gửi tới cache controller. Nếu x nằm trong cache của CPU khác, dữ liệu của cacheline đó sẽ được gửi lại cho CPU A, và trạng thái của tất cả các cacheline có chứa x ở các CPU sẽ là Shared. Nếu x không nằm trong cache của CPU khác, cacheline sẽ được đọc lên từ bộ nhớ chính. Đối với tác vụ STORE(x), điểm khác biệt đến khi x không nằm trong cache của CPU hiện tại nhưng nằm trong cache của CPU khác. Khi đó, để có được cacheline ở trạng thái Exclusive (E) có thể ghi được, CPU phải đợi các CPU khác xóa cacheline ở cache của các CPU đó. Để giải quyết vấn đề này, mỗi CPU sẽ có thêm 1 first-in-first-out (FIFO) store buffer, thay vì phải đợi khi cacheline được trả về có trạng thái Exclusive (E), CPU sẽ ghi vào store buffer và tiếp tục thực thi các lệnh ở dưới. Khi cacheline đó đã sẵn sàng, giá trị ở store buffer sẽ được ghi vào cacheline.
