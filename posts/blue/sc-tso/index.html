@@ -1,0 +1,170 @@
+<!doctype html><html lang=en>
+<head>
+<meta charset=utf-8>
+<meta name=viewport content="width=device-width,initial-scale=1">
+<meta name=robots content="noodp">
+<meta http-equiv=x-ua-compatible content="IE=edge, chrome=1">
+<title>Memory consistency model: Sequential consistency và Total Store Order - The seeker</title><meta name=Description content="Sơ lược về Sequential consistency và Total Store Order memory model"><meta property="og:title" content="Memory consistency model: Sequential consistency và Total Store Order">
+<meta property="og:description" content="Sơ lược về Sequential consistency và Total Store Order memory model">
+<meta property="og:type" content="article">
+<meta property="og:url" content="/posts/blue/sc-tso/"><meta property="article:section" content="posts">
+<meta property="article:published_time" content="2021-08-21T20:28:40+07:00">
+<meta property="article:modified_time" content="2021-08-21T20:28:40+07:00">
+<meta name=twitter:card content="summary">
+<meta name=twitter:title content="Memory consistency model: Sequential consistency và Total Store Order">
+<meta name=twitter:description content="Sơ lược về Sequential consistency và Total Store Order memory model">
+<meta name=application-name content="The seeker">
+<meta name=apple-mobile-web-app-title content="The seeker"><link rel="shortcut icon" type=image/x-icon href=/favicon.ico>
+<link rel=icon type=image/png sizes=32x32 href=/favicon-32x32.png>
+<link rel=icon type=image/png sizes=16x16 href=/favicon-16x16.png><link rel=apple-touch-icon sizes=180x180 href=/apple-touch-icon.png><link rel=manifest href=/site.webmanifest><link rel=canonical href=/posts/blue/sc-tso/><link rel=stylesheet href=/lib/normalize/normalize.min.css><link rel=stylesheet href=/css/style.min.css><link rel=stylesheet href=/lib/fontawesome-free/all.min.css><link rel=stylesheet href=/lib/animate/animate.min.css><script type=application/ld+json>{"@context":"http://schema.org","@type":"BlogPosting","headline":"Memory consistency model: Sequential consistency và Total Store Order","inLanguage":"en","mainEntityOfPage":{"@type":"WebPage","@id":"\/posts\/blue\/sc-tso\/"},"genre":"posts","wordcount":1438,"url":"\/posts\/blue\/sc-tso\/","datePublished":"2021-08-21T20:28:40+07:00","dateModified":"2021-08-21T20:28:40+07:00","publisher":{"@type":"Organization","name":"blue"},"author":{"@type":"Person","name":"blue"},"description":"Sơ lược về Sequential consistency và Total Store Order memory model"}</script></head>
+<body header-desktop header-mobile><script type=text/javascript>(window.localStorage&&localStorage.getItem('theme')?localStorage.getItem('theme')==='dark':''==='auto'?window.matchMedia('(prefers-color-scheme: dark)').matches:''==='dark')&&document.body.setAttribute('theme','dark')</script>
+<div id=mask></div><div class=wrapper><header class=desktop id=header-desktop>
+<div class=header-wrapper>
+<div class=header-title>
+<a href=/ title="The seeker">The seeker</a>
+</div>
+<div class=menu>
+<div class=menu-inner><a class=menu-item href=/posts/> Posts </a><a class=menu-item href=/tags/> Tags </a><a class=menu-item href=/categories/> Categories </a><span class="menu-item delimiter"></span><a href=javascript:void(0); class="menu-item theme-switch" title="Switch Theme">
+<i class="fas fa-adjust fa-fw"></i>
+</a>
+</div>
+</div>
+</div>
+</header><header class=mobile id=header-mobile>
+<div class=header-container>
+<div class=header-wrapper>
+<div class=header-title>
+<a href=/ title="The seeker">The seeker</a>
+</div>
+<div class=menu-toggle id=menu-toggle-mobile>
+<span></span><span></span><span></span>
+</div>
+</div>
+<div class=menu id=menu-mobile><a class=menu-item href=/posts/ title>Posts</a><a class=menu-item href=/tags/ title>Tags</a><a class=menu-item href=/categories/ title>Categories</a><a href=javascript:void(0); class="menu-item theme-switch" title="Switch Theme">
+<i class="fas fa-adjust fa-fw"></i>
+</a></div>
+</div>
+</header>
+<div class="search-dropdown desktop">
+<div id=search-dropdown-desktop></div>
+</div>
+<div class="search-dropdown mobile">
+<div id=search-dropdown-mobile></div>
+</div>
+<main class=main>
+<div class=container><div class=toc id=toc-auto>
+<h2 class=toc-title>Contents</h2>
+<div class=toc-content id=toc-content-auto></div>
+</div><article class="page single"><h1 class="single-title animated flipInX">Memory consistency model: Sequential consistency và Total Store Order</h1><div class=post-meta>
+<div class=post-meta-line><span class=post-author><a href=/ title=Author rel=" author" class=author><i class="fas fa-user-circle fa-fw"></i>blue</a></span></div>
+<div class=post-meta-line><i class="far fa-calendar-alt fa-fw"></i>&nbsp;<time datetime=2021-08-21>2021-08-21</time>&nbsp;<i class="fas fa-pencil-alt fa-fw"></i>&nbsp;1438 words&nbsp;
+<i class="far fa-clock fa-fw"></i>&nbsp;7 minutes&nbsp;</div>
+</div><div class="details toc" id=toc-static kept>
+<div class="details-summary toc-title">
+<span>Contents</span>
+<span><i class="details-icon fas fa-angle-right"></i></span>
+</div>
+<div class="details-content toc-content" id=toc-content-static><nav id=TableOfContents>
+<ul>
+<li>
+<ul>
+<li><a href=#tài-liệu-tham-khảo>Tài liệu tham khảo:</a></li>
+</ul>
+</li>
+</ul>
+</nav></div>
+</div><div class=content id=content><h1 id=memory-consistency-model>Memory consistency model</h1>
+<p>Ban đầu X = Y = 0</p>
+<pre><code>CPU 1                                   CPU 2
+
+X = 1                                   Y = 1
+R1 = Y                                  R2 = X
+</code></pre><p>2 CPU này thực thi độc lập, thứ tự ngẫu nhiên, liệu có khi nào chúng ta thu được kết quả <code>R1 = 0 and R2 = 0</code> hay không?</p>
+<p>Theo những cảm nhận thông thường, chúng ta có thể trả lời là không vì với <code>R1 = 0</code> ta có thể suy ra lệnh <code>R1 = Y</code> ở CPU 1 phải được thực thi trước <code>Y = 1</code> ở CPU 2. Điều này dẫn đến <code>X = 1</code> sẽ được thi sẽ được thực thi trước <code>R2 = X</code> (do <code>X = 1</code> thực thi trước <code>R1 = Y</code> theo trật tự chương trình (program order) ở CPU 1 và <code>Y = 1</code> thực thi trước <code>R2 = X</code> theo trật tự chương trình ở CPU 2). Vì thế, nếu <code>R1 = 0</code> thì <code>R2 = 1</code> và ngược lại nếu <code>R2 = 1</code> thì <code>R1 = 0</code>. Ở đây, chúng ta cũng có thể có cặp <code>R1 = R2 = 1</code> ví dụ như ở trật tự này <code>X = 1</code> -> <code>Y = 1</code> -> <code>R1 = Y</code> -> <code>R2 = X</code>. Tuy nhiên, việc thu được kết quả <code>R1 = 0 and R2 = 0</code> là vô lý.</p>
+<p>Một điều bất ngờ là ở hầu hết cái kiến trúc CPU hiện đại ngày nay kết quả <code>R1 = 0 and R2 = 0</code> là hoàn toàn có thể xảy ra. Ở lập luận ở trên, chúng ta có sử dụng trật tự chương trình (program order) để lập luận về trật tự truy xuất bộ nhớ (memory order). Tuy nhiên, ở phần lớn kiến trúc CPU, trật tự truy xuất bộ nhớ có thể không giống với trật tự của chương trình.</p>
+<p>Việc hiểu về trật tự truy xuất bộ nhớ là vô cùng quan trọng đối với người lập trình để có thể viết ra những chương trình đem lại kết quả như mong muốn. Vì thế, các nhà sản xuất thường xây dựng <strong>memory consistency model</strong> để quy định các thay đổi trong trật tự truy xuất bộ nhớ (memory reordering) được cho phép và những thay đổi không được cho phép.</p>
+<h1 id=sequential-consistency-sc>Sequential consistency (SC)</h1>
+<p>Ở memory consistency model này, trật tự truy xuất bộ nhớ được đảm bảo giống với trật tự chương trình của từng CPU.</p>
+<pre><code>(LOAD(x)  &lt;p  LOAD(y))  -&gt; (LOAD(x)  &lt;m  LOAD(y))
+(LOAD(x)  &lt;p  STORE(y)) -&gt; (LOAD(x)  &lt;m  STORE(y))
+(STORE(x) &lt;p  LOAD(y))  -&gt; (STORE(x) &lt;m  LOAD(y))
+(STORE(x) &lt;p  STORE(y)) -&gt; (STORE(x) &lt;m  STORE(y))
+
+Với 
+LOAD(x), STORE(x) là việc đọc và ghi bộ nhớ ở địa chỉ x
+&lt;p thể hiện trật tự chương trình
+&lt;m thể hiện trật tự truy xuất bộ nhớ 
+</code></pre><p>Trở lại với ví dụ ở đầu, ta có</p>
+<pre><code>(X = 1 &lt;p R1 = Y) -&gt; (X = 1 &lt;m R1 = Y)          (1)
+R1 = 0            -&gt; (R1 = Y &lt;m Y = 1)          (2)
+(Y = 1 &lt;p R2 = X) -&gt; (Y = 1 &lt;m R2 = X)          (3)
+(1), (2), (3)     -&gt; (X = 1 &lt;m R2 = X)          (4)
+(4)               -&gt; R2 = 1
+</code></pre><p>Tương tự nếu <code>R2 = 0</code>
+Từ đó, chúng ta có thể thấy trong SC, kết quả <code>R1= 0 and R2 = 0</code> là không thể</p>
+<h1 id=total-store-order-tso>Total store order (TSO)</h1>
+<p>SC mang đến một mô hình dễ hiểu cho người lập trình tuy nhiên hiệu năng không tốt. Một tác vụ truy xuất bộ nhớ thực thi lâu hơn mong đợi có thể làm gián đoạn việc thực thi trên CPU. Trong 2 tác vụ truy xuất bộ nhớ, tác vụ STORE thường có thời gian thực thi lâu hơn.</p>
+<p>Để giải thích cho điều này giả sử mỗi CPU sẽ có 1 bộ cache riêng và sử dụng giao thức MESI để quản lý cache. Trong giao thức này, CPU có thể đọc từ cacheline khi cacheline trong trạng thái Modified (M), Exclusive (E), Shared (S), tuy nhiên chỉ có thể ghi vào cacheline khi cacheline trong trạng thái Modified (M), Exclusive (E). Khi thực thi tác vụ LOAD(x) nếu x không trong cache của CPU A (cache miss), 1 lời nhắn sẽ được gửi tới cache controller. Nếu x nằm trong cache của CPU khác, dữ liệu của cacheline đó sẽ được gửi lại cho CPU A, và trạng thái của tất cả các cacheline có chứa x ở các CPU sẽ là Shared. Nếu x không nằm trong cache của CPU khác, cacheline sẽ được đọc lên từ bộ nhớ chính. Đối với tác vụ STORE(x), điểm khác biệt đến khi x không nằm trong cache của CPU hiện tại nhưng nằm trong cache của CPU khác. Khi đó, để có được cacheline ở trạng thái Exclusive (E) có thể ghi được, CPU phải đợi các CPU khác xóa cacheline ở cache của các CPU đó. Để giải quyết vấn đề này, mỗi CPU sẽ có thêm 1 first-in-first-out (FIFO) store buffer, thay vì phải đợi khi cacheline được trả về có trạng thái Exclusive (E), CPU sẽ ghi vào store buffer và tiếp tục thực thi các lệnh ở dưới. Khi cacheline đó đã sẵn sàng, giá trị ở store buffer sẽ được ghi vào cacheline.</p>
+<p>Với cách hiện thực này, memory consistency model được nới lỏng hơn so với SC, khi đó trật tự chương trình STORE -> LOAD không đảm bảo thứ tự STORE -> LOAD ở trật tự truy xuất bộ nhớ. Tuy nhiên, trật tự STORE -> STORE vẫn được đảm bảo, khi store buffer được hiện thực với mô hình FIFO và khi store buffer không rỗng, các tác vụ STORE tiếp theo phải ghi giá trị vào store buffer dù cacheline đang ở trạng thái có thể ghi được ở CPU đó.</p>
+<p>Để cho phép người lập trình đảm bảo trật tự STORE -> LOAD khi cần thiết, memory barrier (hay còn gọi là fence) được cung cấp, lệnh này sẽ &mldr; store buffer</p>
+<pre><code>(LOAD(x)  &lt;p  LOAD(y))  -&gt; (LOAD(x)  &lt;m  LOAD(y))
+(LOAD(x)  &lt;p  STORE(y)) -&gt; (LOAD(x)  &lt;m  STORE(y))
+(STORE(x) &lt;p  STORE(y)) -&gt; (STORE(x) &lt;m  STORE(y))
+(FENCE &lt;p LOAD(x)/STORE(x)/FENCE) -&gt; (FENCE &lt;m LOAD(x)/STORE(x)/FENCE)
+(LOAD(x)/STORE(x)/FENCE &lt;p FENCE) -&gt; (LOAD(x)/STORE(x)/FENCE &lt;m FENCE)
+</code></pre><p>Trở lại với ví dụ ở đầu, do trật tự chương trình STORE -> LOAD không đảm bảo việc truy xuất bộ nhớ có trật tự tương tự, trật tự truy xuất bộ nhớ như sau hoàn toàn có thể xảy ra</p>
+<pre><code>(R1 = Y) &lt;m (Y = 1) &lt;m (R2 = X) &lt;m (X = 1)
+</code></pre><p>Khi đó, chúng ta sẽ thu được kết quả <code>R1 = 0 and R2 = 0</code></p>
+<p>Tình huống ví dụ về việc xảy ra trật tự trên:</p>
+<ul>
+<li>Giả sử ban đầu cacheline chứa X đang ở trạng thái Exclusive ở CPU 2, cacheline chứa Y đang ở trạng thái Shared và ở cả 2 CPU</li>
+<li>CPU 1 thực thi <code>X = 1</code> nhưng bị cache miss nên gửi yêu cầu sỡ hữu cacheline chứa X ở trạng thái Exclusive đến các CPU và lưu <code>X = 1</code> vào store buffer</li>
+<li>CPU 1 thực thi <code>R1 = Y</code> và đọc được Y từ cacheline có giá trị là 0</li>
+<li>CPU 2 thực thi <code>Y = 1</code> nhưng bị cache miss nên gửi yêu cầu sỡ hữu cacheline chứa Y ở trạng thái Exclusive đến các CPU và lưu <code>Y = 1</code> vào store buffer</li>
+<li>CPU 1 nhận được yêu cầu của CPU 2 về cacheline chứa Y, thực hiện xóa cacheline này trong cache của mình và gửi lời nhắn đã xóa (acknowledge) cho CPU 1</li>
+<li>CPU 2 nhận được thông tin từ CPU 1 viết <code>Y = 1</code> từ store buffer xuống cache</li>
+<li>CPU 2 thực thi <code>R2 = X</code> và đọc được X từ cacheline có giá trị là 0</li>
+<li>CPU 2 nhận được yêu cầu của CPU 1 về cacheline chứa X, thực hiện xóa cacheline này trong cache của mình và gửi lời nhắn đã xóa (acknowledge) cho CPU 1</li>
+<li>CPU 1 nhận được thông tin từ CPU 2 viết <code>X = 1</code> từ store buffer xuống cache. Tuy nhiên, lúc này thì việc đọc R1, R2 hoàn tất và chúng ta có kết quả <code>R1 = 0 and R2 = 0</code></li>
+</ul>
+<h3 id=tài-liệu-tham-khảo>Tài liệu tham khảo:</h3>
+<ul>
+<li>Vijay Nagarajan, Daniel J. Sorin, Mark D. Hill, David A. Wood&rsquo;s book <a href=https://www.morganclaypool.com/doi/abs/10.2200/S00962ED2V01Y201910CAC049 target=_blank rel="noopener noreffer">A Primer on Memory Consistency and Cache Coherence, Second Edition</a></li>
+<li>Peter Sewell, Susmit Sarkar, Scott Owens, Francesco Zappa Nardelli, Magnus O. Myreen&rsquo;s paper <a href=https://www.cl.cam.ac.uk/~pes20/weakmemory/cacm.pdf target=_blank rel="noopener noreffer">x86-TSO: A Rigorous and Usable Programmer’s Model for x86 Multiprocessors</a></li>
+</ul>
+</div><div class=post-footer id=post-footer>
+<div class=post-info>
+<div class=post-info-line>
+<div class=post-info-mod>
+<span>Updated on 2021-08-21</span>
+</div>
+<div class=post-info-license></div>
+</div>
+<div class=post-info-line>
+<div class=post-info-md></div>
+<div class=post-info-share>
+<span></span>
+</div>
+</div>
+</div>
+<div class=post-info-more>
+<section class=post-tags></section>
+<section>
+<span><a href=javascript:void(0); onclick=window.history.back()>Back</a></span>&nbsp;|&nbsp;<span><a href=/>Home</a></span>
+</section>
+</div>
+<div class=post-nav></div>
+</div>
+</article></div>
+</main><footer class=footer>
+<div class=footer-container><div class=footer-line>Powered by <a href=https://gohugo.io/ target=_blank rel="noopener noreffer" title="Hugo 0.87.0">Hugo</a> | Theme - <a href=https://github.com/dillonzq/LoveIt target=_blank rel="noopener noreffer" title="LoveIt 0.2.10"><i class="far fa-kiss-wink-heart fa-fw"></i> LoveIt</a>
+</div><div class=footer-line><i class="far fa-copyright fa-fw"></i><span itemprop=copyrightYear>2021</span><span class=author itemprop=copyrightHolder>&nbsp;<a href=/ target=_blank></a></span></div>
+</div>
+</footer></div>
+<div id=fixed-buttons><a href=# id=back-to-top class=fixed-button title="Back to Top">
+<i class="fas fa-arrow-up fa-fw"></i>
+</a><a href=# id=view-comments class=fixed-button title="View Comments">
+<i class="fas fa-comment fa-fw"></i>
+</a>
+</div><script type=text/javascript src=/lib/smooth-scroll/smooth-scroll.min.js></script><script type=text/javascript src=/lib/lazysizes/lazysizes.min.js></script><script type=text/javascript src=/lib/clipboard/clipboard.min.js></script><script type=text/javascript>window.config={code:{copyTitle:"Copy to clipboard",maxShownLines:10},comment:{}}</script><script type=text/javascript src=/js/theme.min.js></script></body>
+</html>
