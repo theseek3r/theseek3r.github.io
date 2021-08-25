@@ -66,14 +66,16 @@
 </div>
 <div class="details-content toc-content" id=toc-content-static><nav id=TableOfContents>
 <ul>
-<li>
+<li><a href=#memory-consistency-model>Memory consistency model</a></li>
+<li><a href=#sequential-consistency-sc>Sequential consistency (SC)</a></li>
+<li><a href=#total-store-order-tso>Total store order (TSO)</a>
 <ul>
 <li><a href=#tài-liệu-tham-khảo>Tài liệu tham khảo:</a></li>
 </ul>
 </li>
 </ul>
 </nav></div>
-</div><div class=content id=content><h1 id=memory-consistency-model>Memory consistency model</h1>
+</div><div class=content id=content><h2 id=memory-consistency-model>Memory consistency model</h2>
 <p>Ban đầu X = Y = 0</p>
 <pre><code>CPU 1                                   CPU 2
 
@@ -83,7 +85,7 @@ R1 = Y                                  R2 = X
 <p>Theo những cảm nhận thông thường, chúng ta có thể trả lời là không vì với <code>R1 = 0</code> ta có thể suy ra lệnh <code>R1 = Y</code> ở CPU 1 phải được thực thi trước <code>Y = 1</code> ở CPU 2. Điều này dẫn đến <code>X = 1</code> sẽ được thi sẽ được thực thi trước <code>R2 = X</code> (do <code>X = 1</code> thực thi trước <code>R1 = Y</code> theo trật tự chương trình (program order) ở CPU 1 và <code>Y = 1</code> thực thi trước <code>R2 = X</code> theo trật tự chương trình ở CPU 2). Vì thế, nếu <code>R1 = 0</code> thì <code>R2 = 1</code> và ngược lại nếu <code>R2 = 1</code> thì <code>R1 = 0</code>. Ở đây, chúng ta cũng có thể có cặp <code>R1 = R2 = 1</code> ví dụ như ở trật tự này <code>X = 1</code> -> <code>Y = 1</code> -> <code>R1 = Y</code> -> <code>R2 = X</code>. Tuy nhiên, việc thu được kết quả <code>R1 = 0 and R2 = 0</code> là vô lý.</p>
 <p>Một điều bất ngờ là ở hầu hết cái kiến trúc CPU hiện đại ngày nay kết quả <code>R1 = 0 and R2 = 0</code> là hoàn toàn có thể xảy ra. Ở lập luận ở trên, chúng ta có sử dụng trật tự chương trình (program order) để lập luận về trật tự truy xuất bộ nhớ (memory order). Tuy nhiên, ở phần lớn kiến trúc CPU, trật tự truy xuất bộ nhớ có thể không giống với trật tự của chương trình.</p>
 <p>Việc hiểu về trật tự truy xuất bộ nhớ là vô cùng quan trọng đối với người lập trình để có thể viết ra những chương trình đem lại kết quả như mong muốn. Vì thế, các nhà sản xuất thường xây dựng <strong>memory consistency model</strong> để quy định các thay đổi trong trật tự truy xuất bộ nhớ (memory reordering) được cho phép và những thay đổi không được cho phép.</p>
-<h1 id=sequential-consistency-sc>Sequential consistency (SC)</h1>
+<h2 id=sequential-consistency-sc>Sequential consistency (SC)</h2>
 <p>Ở memory consistency model này, trật tự truy xuất bộ nhớ được đảm bảo giống với trật tự chương trình của từng CPU.</p>
 <pre><code>(LOAD(x)  &lt;p  LOAD(y))  -&gt; (LOAD(x)  &lt;m  LOAD(y))
 (LOAD(x)  &lt;p  STORE(y)) -&gt; (LOAD(x)  &lt;m  STORE(y))
@@ -102,7 +104,7 @@ R1 = 0            -&gt; (R1 = Y &lt;m Y = 1)          (2)
 (4)               -&gt; R2 = 1
 </code></pre><p>Tương tự nếu <code>R2 = 0</code>
 Từ đó, chúng ta có thể thấy trong SC, kết quả <code>R1= 0 and R2 = 0</code> là không thể</p>
-<h1 id=total-store-order-tso>Total store order (TSO)</h1>
+<h2 id=total-store-order-tso>Total store order (TSO)</h2>
 <p>SC mang đến một mô hình dễ hiểu cho người lập trình tuy nhiên hiệu năng không tốt. Một tác vụ truy xuất bộ nhớ thực thi lâu hơn mong đợi có thể làm gián đoạn việc thực thi trên CPU. Trong 2 tác vụ truy xuất bộ nhớ, tác vụ STORE thường có thời gian thực thi lâu hơn.</p>
 <p>Để giải thích cho điều này giả sử mỗi CPU sẽ có 1 bộ cache riêng và sử dụng giao thức MESI để quản lý cache. Trong giao thức này, CPU có thể đọc từ cacheline khi cacheline trong trạng thái Modified (M), Exclusive (E), Shared (S), tuy nhiên chỉ có thể ghi vào cacheline khi cacheline trong trạng thái Modified (M), Exclusive (E). Khi thực thi tác vụ LOAD(x) nếu x không trong cache của CPU A (cache miss), 1 lời nhắn sẽ được gửi tới cache controller. Nếu x nằm trong cache của CPU khác, dữ liệu của cacheline đó sẽ được gửi lại cho CPU A, và trạng thái của tất cả các cacheline có chứa x ở các CPU sẽ là Shared. Nếu x không nằm trong cache của CPU khác, cacheline sẽ được đọc lên từ bộ nhớ chính. Đối với tác vụ STORE(x), điểm khác biệt đến khi x không nằm trong cache của CPU hiện tại nhưng nằm trong cache của CPU khác. Khi đó, để có được cacheline ở trạng thái Exclusive (E) có thể ghi được, CPU phải đợi các CPU khác xóa cacheline ở cache của các CPU đó. Để giải quyết vấn đề này, mỗi CPU sẽ có thêm 1 first-in-first-out (FIFO) store buffer, thay vì phải đợi khi cacheline được trả về có trạng thái Exclusive (E), CPU sẽ ghi vào store buffer và tiếp tục thực thi các lệnh ở dưới. Khi cacheline đó đã sẵn sàng, giá trị ở store buffer sẽ được ghi vào cacheline.</p>
 <p>Với cách hiện thực này, memory consistency model được nới lỏng hơn so với SC, khi đó trật tự chương trình STORE -> LOAD không đảm bảo thứ tự STORE -> LOAD ở trật tự truy xuất bộ nhớ. Tuy nhiên, trật tự STORE -> STORE vẫn được đảm bảo, khi store buffer được hiện thực với mô hình FIFO và khi store buffer không rỗng, các tác vụ STORE tiếp theo phải ghi giá trị vào store buffer dù cacheline đang ở trạng thái có thể ghi được ở CPU đó.</p>
